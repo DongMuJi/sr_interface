@@ -5,10 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /MotionPlanning1
+        - /MotionPlanning1/Scene Geometry1
         - /MotionPlanning1/Scene Robot1
         - /MotionPlanning1/Planning Request1
         - /MotionPlanning1/Planned Path1
-        - /MotionPlanning1/Scene Geometry1
         - /Trajectory1/Links1/ra_base1
         - /Trajectory1/Links1/ra_base_link1
         - /Trajectory1/Links1/ra_ee_link1
@@ -100,6 +100,7 @@ Visualization Manager:
           Z: 2
       Name: MotionPlanning
       Planned Path:
+        Color Enabled: false
         Interrupt Display: false
         Links:
           All Links Enabled: true
@@ -306,6 +307,7 @@ Visualization Manager:
             Show Trail: false
         Loop Animation: true
         Robot Alpha: 0.5
+        Robot Color: 150; 50; 150
         Show Robot Collision: false
         Show Robot Visual: true
         Show Trail: false
@@ -549,6 +551,7 @@ Visualization Manager:
         Show Robot Visual: true
       Value: true
     - Class: moveit_rviz_plugin/Trajectory
+      Color Enabled: false
       Enabled: true
       Interrupt Display: false
       Links:
@@ -757,6 +760,7 @@ Visualization Manager:
       Loop Animation: false
       Name: Trajectory
       Robot Alpha: 0.5
+      Robot Color: 150; 50; 150
       Robot Description: robot_description
       Show Robot Collision: false
       Show Robot Visual: true
@@ -769,7 +773,7 @@ Visualization Manager:
       Marker Topic: visualization_marker_array
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -794,15 +798,15 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.880822
-        Y: 0.539839
-        Z: -4.99416e-07
+        X: -0.631824
+        Y: 0.0843449
+        Z: -2.60997e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.669799
+      Pitch: 0.284799
       Target Frame: forearm
       Value: XYOrbit (rviz)
-      Yaw: 6.16676
+      Yaw: 0.958577
     Saved: ~
 Window Geometry:
   Displays:
@@ -818,5 +822,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1366
-  X: 0
-  Y: 24
+  X: 31
+  Y: 14
