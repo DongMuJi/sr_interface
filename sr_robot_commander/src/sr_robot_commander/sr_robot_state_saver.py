@@ -82,6 +82,12 @@ class SrStateSaverUnsafe(object):
             rospy.logfatal("Unknown save type")
             exit(-1)
 
+        if self.__hand_or_arm == "hand":
+            if "rh_WRJ1" in current_dict:
+                del(current_dict["rh_WRJ1"])
+            if "rh_WRJ2" in current_dict:
+                del(current_dict["rh_WRJ2"])
+
         if self.__save_target:
             rospy.loginfo("Getting targets")
             waiting_for_targets = True
