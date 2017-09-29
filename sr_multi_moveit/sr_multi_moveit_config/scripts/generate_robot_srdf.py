@@ -153,7 +153,7 @@ class SRDFRobotGenerator(object):
         if description_file is None and len(sys.argv) > 1:
             description_file = sys.argv[1]
 
-        self._save_files = rospy.get_param('~save_files', False)
+        self._save_files = rospy.get_param('~save_files', True)
         self._path_to_save_files = rospy.get_param('~path_to_save_files', "/tmp/")
         self._file_name = rospy.get_param('~file_name', "generated_robot")
 

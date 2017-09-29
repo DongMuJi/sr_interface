@@ -52,6 +52,7 @@ class PlannerAnnotationParser(AnnotationParserBase):
 
         # wait for the scene to be spawned properly
         rospy.sleep(0.5)
+        raw_input("after loading scene")
 
     def _init_planning(self):
         """
