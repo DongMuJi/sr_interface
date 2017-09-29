@@ -36,48 +36,106 @@ class OpenRAVEPlanner(object):
         robot_file_name = rospy.get_param('~robot_file_name', "generated_robot")
 
         self.env.Load("/tmp/model.xml")
-        robot = self.env.GetRobots()[0]
-        print "robot", robot.GetName()
-        manip = robot.GetActiveManipulator()
-        print "manip:", manip.GetName()
+        self.robot = self.env.GetRobots()[0]
+        print "robot", self.robot.GetName()
+        self.manip = self.robot.GetActiveManipulator()
+        print "manip:", self.manip.GetName()
 
-        ikmodel = databases.inversekinematics.InverseKinematicsModel(robot, iktype=IkParameterization.Type.Transform6D)
+        print self.robot.GetLinks()[2].GetTransform()
+        print self.robot.GetLinks()[2].GetName()
+
+        ikmodel = databases.inversekinematics.InverseKinematicsModel(self.robot, iktype=IkParameterization.Type.Transform6D)
         if not ikmodel.load():
             print "Autogenerating ikmodel"
             ikmodel.autogenerate()
 
-        print "Loading robot"
-        self.env.Load("data/mug1.kinbody.xml")
+        self.manipprob = interfaces.BaseManipulation(self.robot)  # create the interface for basic manipulation programs
+        raw_input("Press a key to start the test")
 
-        mug = self.env.GetKinBody('mug')
-        mug_pose = numpy.array([[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0.05], [0, 0, 0, 1]])
+        self.test([0.11, 0.00, -0.93, -2.22, -1.71, -1.68], [1.55, -1.15, 2.01, 2.39, -1.55, -1.58])
+        self.test([2.012, -0.639, 1.827, 2.019, -1.390, -3.056], [2.675, -0.852, 1.202, 2.822, -1.724, -1.615])
+        self.test([-1.489, -2.032, 2.080, -2.777, -1.522, 3.139], [-0.387, -1.445, 1.739, -3.002, -2.2003, -2.752])
 
-        mug.SetTransform(mug_pose)
-
-        manipprob = interfaces.BaseManipulation(robot)  # create the interface for basic manipulation programs
-
-        raw_input("Press a key to start:")
-
-        Tgoal = numpy.array([[0.37, 0.92, 0, 0.4], [0, 0, 1, -0.23], [0.93, -0.37, 0, 0.12], [0, 0, 0, 1]])
-        res = manipprob.MoveToHandPosition(matrices=[Tgoal], seedik=10)  # call motion planner with goal joint angles
-        robot.WaitForController(0)  # wait
-
-        manipprob = interfaces.BaseManipulation(robot)  # create the interface for basic manipulation programs
-        Tgoal = numpy.array([[0.51, 0.86, 0, -0.4], [0, 0, 1, -0.23], [0.86, -0.51, 0, 0.12], [0, 0, 0, 1]])
-        res = manipprob.MoveToHandPosition(matrices=[Tgoal], seedik=10)  # call motion planner with goal joint angles
-        robot.WaitForController(0)  # wait
-
-        #urdf_path = robot_files_path + "/" + robot_file_name + ".urdf"
-        #srdf_path = robot_files_path + "/" + robot_file_name + ".srdf"
-        #HandFilesGenerator(config_manipulator_name, hand_files_path, hand_file_name)
-
-        #self.robot_name = or_utils.load_robot(urdf_path, srdf_path)
-        #if self.robot_name is None:
-        #    return
-
-        #self.robot = self.env.GetRobot(self.robot_name)
         raw_input("key to continue")
-        #self.read_manipulator_config()
+
+    def move_to_joint_value(self, joints):
+        print "Testing in joint space"
+        with self.env:
+            jointnames = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
+            self.robot.SetActiveDOFs([self.robot.GetJoint(name).GetDOFIndex() for name in jointnames])
+            try:
+                # self.manipprob.MoveActiveJoints(goal=joints,maxiter=5000,steplength=0.15,maxtries=5)
+                plan = self.manipprob.MoveActiveJoints(goal=joints, maxiter=5000, steplength=0.01, maxtries=2,
+                                                       execute=False, outputtrajobj=True)
+                plan_quality = self.evaluate_plan(plan)
+                print "plan_quality", plan_quality
+
+            except planning_error:
+                rospy.logerr("Planning error")
+                return
+        self.robot.WaitForController(0)  # wait
+
+    def evaluate_plan(self, plan):
+        num_of_joints = len(self.manip.GetArmIndices())
+        weights = numpy.array(sorted(range(1, num_of_joints + 1), reverse=True))
+        plan_array = numpy.empty(shape=(plan.GetNumWaypoints(), num_of_joints))
+
+        for i in range(plan.GetNumWaypoints()):
+            plan_array[i] = plan.GetWaypoint(i)[0:6]
+
+        deltas = abs(numpy.diff(plan_array, axis=0))
+        sum_deltas = numpy.sum(deltas, axis=0)
+        sum_deltas_weighted = sum_deltas * weights
+        plan_quality = numpy.sum(sum_deltas_weighted)
+        return plan_quality
+
+    def set_joint_values(self, joints):
+        jointnames = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
+        self.robot.SetActiveDOFs([self.robot.GetJoint(name).GetDOFIndex() for name in jointnames])
+        self.robot.SetActiveDOFValues(joints)
+        rospy.sleep(5.0)
+
+    def move_to_pose(self, position, quaternion):
+        print "Testing in cartesian space"
+        matrix = self.getMatrixFromPose(position,quaternion)
+        Tgoal = numpy.array(matrix)
+        plan = self.manipprob.MoveToHandPosition(matrices=[Tgoal], seedik=10, execute=False, outputtrajobj=True)
+        plan_quality = self.evaluate_plan(plan)
+        print "plan_quality", plan_quality
+
+        self.robot.WaitForController(0)  # wait
+
+    def getPoseFromMatrix(self, matrix):
+        # Openrave function returns the quaternion first than translation, so order should be inverted
+        pose_q_t = poseFromMatrix(matrix)
+        pose_t_q = [0.0] * 7
+        pose_t_q[0:3] = pose_q_t[4:7]
+        pose_t_q[3] = pose_q_t[1]
+        pose_t_q[4] = pose_q_t[2]
+        pose_t_q[5] = pose_q_t[3]
+        pose_t_q[6] = pose_q_t[0]
+        return pose_t_q
+
+    def getMatrixFromPose(self, position, quaternion):
+        pose_or_format = [0.0] * 7
+        pose_or_format[0] = quaternion[3]
+        pose_or_format[1] = quaternion[0]
+        pose_or_format[2] = quaternion[1]
+        pose_or_format[3] = quaternion[2]
+        pose_or_format[4:7] = position
+        return matrixFromPose(pose_or_format)
+
+    def test(self, start_joints, goal_joints):
+        self.set_joint_values(start_joints)
+        print "start xyz", self.getPoseFromMatrix(self.manip.GetTransform())
+        self.move_to_joint_value(goal_joints)
+
+        self.set_joint_values(goal_joints)
+        pose = self.getPoseFromMatrix(self.manip.GetTransform())
+        print "goal xyz:", pose
+        self.set_joint_values(start_joints)
+        self.move_to_pose(pose[0:3],pose[3:7])
+
 
 if __name__ == '__main__':
     rospy.init_node("openrave_planner_benchmark")
