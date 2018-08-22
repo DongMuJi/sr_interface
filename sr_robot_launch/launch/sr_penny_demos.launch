@@ -20,5 +20,4 @@
     <arg name="initial_z" default="$(arg initial_z)" />
     <arg name="start_home" default="$(arg start_home)" />
   </include>
-  </group>
 </launch>
