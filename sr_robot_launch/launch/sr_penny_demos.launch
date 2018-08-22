@@ -8,8 +8,11 @@
   <arg name="initial_z" default="0.7621" />
   <arg name="start_home" default="$(arg sim)" />
   <arg name="arm_group" default="right_arm_and_manipulator" />
+  <arg name="eth_port" default="eth0" />
 
-  <include file="$(find sr_robot_launch)/launch/sr_ur_arm_hand.launch">
+
+  <!-- SIMULATED ROBOT -->
+  <include file="$(find sr_robot_launch)/launch/sr_right_ur10arm_hand.launch">
     <env name="GAZEBO_MODEL_PATH" value="$(find sr_description_common)/models/" />
     <env name="GAZEBO_MODEL_DATABASE_URI" value="" />
     <env name="MESH_WORKSPACE_PATH" value="$(find sr_description_common)/models/" />
@@ -19,5 +22,6 @@
     <arg if="$(arg sim)" name="world" default="$(find sr_description_common)/worlds/251_lab_table_full.world" />
     <arg name="initial_z" default="$(arg initial_z)" />
     <arg name="start_home" default="$(arg start_home)" />
+    <arg name="eth_port" default="$(arg eth_port) /">
   </include>
 </launch>
