@@ -75,5 +75,6 @@
     <arg name="home_angles" value="$(arg home_angles)"/>
     <arg name="grasp_controller" value="$(arg grasp_controller)"/>
     <arg name="pwm_control" value="$(arg pwm_control)"/>
+    <arg name="scene_file" value="$(arg scene_file)" />
   </include>
 </launch>
