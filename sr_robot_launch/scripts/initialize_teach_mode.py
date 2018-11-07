@@ -9,7 +9,8 @@ from controller_manager_msgs.srv import ListControllers
 
 
 class InitializeTeachMode(object):
-    def __init__(self):
+
+    def __init__(self, robot_joint_prefixes):
         rospy.loginfo("Initialized...")
         self._hand_finder = HandFinder()
         self._hand_e = self._hand_finder.hand_e_available()
@@ -39,16 +40,15 @@ class InitializeTeachMode(object):
             #     exit()
             if not controllers_running:
                 rospy.loginfo("Waiting for the controllers to start...")
-        self.joints, self.running_controllers = self._get_joints(controllers_info)
+        self.joints, self.running_controllers = self._get_controller_info(controllers_info)
 
-        #
-        # if self._hand_e:
-        #     self._inti_hand_e()
-        # elif self._hand_h:
-        #     self._init_hand_h()
-        # else:
-        #     rospy.logerr("No hand was recognised")
-        #     exit()
+        if self._hand_e:
+            self._init_hand_e(robot_joint_prefixes)
+        elif self._hand_h:
+            self._init_hand_h()
+        else:
+            rospy.logerr("No hand was recognised")
+            exit()
 
     def _get_controller_info(self, controller_info):
         rospy.logwarn("getting joints")
@@ -62,30 +62,26 @@ class InitializeTeachMode(object):
         rospy.loginfo("controller names: {}".format(controller_names))
         return total_joint_list, controller_names
 
-    def _init_hand_e(self):
+    def _init_hand_e(self, robot_joint_prefixes):
         self.hand_controllers = {
             "effort": ["sh_{0}{1}_effort_controller".format(hand_joint_prefix, joint)
                        for joint in self.joints
-                       for hand_joint_prefix in self.robot_joint_prefixes],
+                       for hand_joint_prefix in robot_joint_prefixes],
             "position": ["sh_{0}{1}_position_controller".format(hand_joint_prefix, joint)
                          for joint in self.joints
-                         for hand_joint_prefix in self.robot_joint_prefixes],
+                         for hand_joint_prefix in robot_joint_prefixes],
             "mixed": ["sh_{0}{1}_mixed_position_velocity_controller".format(hand_joint_prefix, joint)
                       for joint in self.joints
-                      for hand_joint_prefix in self.robot_joint_prefixes],
+                      for hand_joint_prefix in robot_joint_prefixes],
             "velocity": ["sh_{0}{1}_velocity_controller".format(hand_joint_prefix, joint)
                          for joint in self.joints
-                         for hand_joint_prefix in self.robot_joint_prefixes],
+                         for hand_joint_prefix in robot_joint_prefixes],
             "stop": []}
 
     def _init_hand_h(self):
         self.hand_controllers = {
-            "grasp": ["sh_{0}{1}_effort_controller".format(hand_joint_prefix, joint)
-                       for joint in self.joints
-                       for hand_joint_prefix in self.robot_joint_prefixes],
-            "position": ["sh_{0}{1}_position_controller".format(hand_joint_prefix, joint)
-                         for joint in self.joints
-                         for hand_joint_prefix in self.robot_joint_prefixes],
+            "grasp": ["H0_grasp_controller"],
+            "trajectory": ["joint_state_controller"],
             "stop": []}
         # self.joints = rospy.get_param("joints")
         # self.joints = rospy.global_name("joints")
